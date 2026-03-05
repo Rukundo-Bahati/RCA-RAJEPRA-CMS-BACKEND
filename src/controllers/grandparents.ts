@@ -161,11 +161,23 @@ export const createFamily = async (req: Request, res: Response) => {
 // Update an existing family
 export const updateFamily = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const { name, generation } = req.body;
+    const {
+        name, generation, total_members, total_boys, total_girls,
+        total_y1, total_y2, total_y3
+    } = req.body;
     try {
         const result = await query(
-            'UPDATE families SET name = $1, generation = $2 WHERE id = $3 RETURNING *',
-            [name, generation, id]
+            `UPDATE families SET 
+                name = $1, 
+                generation = $2, 
+                total_members = $3, 
+                total_boys = $4, 
+                total_girls = $5, 
+                total_y1 = $6, 
+                total_y2 = $7, 
+                total_y3 = $8 
+            WHERE id = $9 RETURNING *`,
+            [name, generation, total_members || 0, total_boys || 0, total_girls || 0, total_y1 || 0, total_y2 || 0, total_y3 || 0, id]
         );
 
         if (result.rows.length === 0) {

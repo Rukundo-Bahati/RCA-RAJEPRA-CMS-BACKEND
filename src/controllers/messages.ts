@@ -66,27 +66,86 @@ export const sendMessage = async (req: Request, res: Response) => {
     }
 
     try {
-        const mailOptions = {
-            from: `"${senderName || 'RCA RAJEPRA'}" <${process.env.EMAIL_USER}>`,
-            bcc: recipients.join(','), // Use BCC for privacy
-            subject: subject,
-            text: message,
-            html: `
+        const htmlContent = `
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
                     <h2 style="color: #4f46e5;">${subject}</h2>
                     <p style="white-space: pre-wrap;">${message}</p>
                     <hr style="margin-top: 20px; border: 0; border-top: 1px solid #eee;" />
                     <p style="color: #6b7280; font-size: 12px;">
-                        This message was sent from the ${senderName || 'Church Management System'}.
+                        This message was sent from ${senderName || 'RCA RAJEPRA'} via RCA Rajepra.
                     </p>
                 </div>
-            `
+            `;
+
+        const mailOptions = {
+            from: `"${senderName || 'RCA RAJEPRA'}" <${process.env.EMAIL_USER}>`,
+            bcc: recipients.join(','), // Use BCC for privacy
+            subject: subject,
+            text: message,
+            html: htmlContent
         };
 
-        await transporter.sendMail(mailOptions);
-        res.status(200).json({ message: 'Message sent successfully' });
+        try {
+            await transporter.sendMail(mailOptions);
+            await query(
+                'INSERT INTO communications (sender_name, portal, subject, body, recipients, status) VALUES ($1, $2, $3, $4, $5, $6)',
+                [senderName || 'RCA RAJEPRA', req.body.portal || 'general', subject, htmlContent, JSON.stringify(recipients), 'sent']
+            );
+            res.status(200).json({ message: 'Message sent successfully' });
+        } catch (error) {
+            await query(
+                'INSERT INTO communications (sender_name, portal, subject, body, recipients, status) VALUES ($1, $2, $3, $4, $5, $6)',
+                [senderName || 'RCA RAJEPRA', req.body.portal || 'general', subject, htmlContent, JSON.stringify(recipients), 'failed']
+            );
+            console.error('Error sending message:', error);
+            res.status(500).json({ message: 'Error sending message', error });
+        }
     } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).json({ message: 'Error sending message', error });
+        console.error('Error with message route:', error);
+        res.status(500).json({ message: 'Error formatting message', error });
+    }
+};
+
+export const getMessages = async (req: Request, res: Response) => {
+    const { portal, status, email } = req.query;
+    try {
+        let sql = 'SELECT * FROM communications WHERE 1=1';
+        const params: any[] = [];
+
+        if (status) {
+            if (status === 'inbox' && email) {
+                // Find where the email is in the JSONB array recipients
+                sql += ` AND recipients @> $${params.length + 1}::jsonb AND status = 'sent'`;
+                params.push(JSON.stringify([email]));
+            } else {
+                sql += ` AND status = $${params.length + 1}`;
+                params.push(status);
+                if (portal) {
+                    sql += ` AND portal = $${params.length + 1}`;
+                    params.push(portal);
+                }
+            }
+        }
+
+        sql += ' ORDER BY created_at DESC';
+        const result = await query(sql, params);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error('Error fetching messages:', error);
+        res.status(500).json({ message: 'Error fetching messages', error });
+    }
+};
+
+export const saveDraft = async (req: Request, res: Response) => {
+    const { recipients, subject, message, senderName, portal } = req.body;
+    try {
+        await query(
+            'INSERT INTO communications (sender_name, portal, subject, body, recipients, status) VALUES ($1, $2, $3, $4, $5, $6)',
+            [senderName || 'RCA RAJEPRA', portal || 'general', subject, message, JSON.stringify(recipients || []), 'draft']
+        );
+        res.status(200).json({ message: 'Draft saved successfully' });
+    } catch (error) {
+        console.error('Error saving draft:', error);
+        res.status(500).json({ message: 'Error saving draft', error });
     }
 };
