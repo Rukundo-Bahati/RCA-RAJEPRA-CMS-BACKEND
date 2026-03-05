@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import grandparentRoutes from './routes/grandparents';
 import authRoutes from './routes/auth';
+import generalRoutes from './routes/general';
+import assignmentsRoutes from './routes/assignments';
+import messageRoutes from './routes/messages';
 import initDb from './config/initDb';
 
 dotenv.config();
@@ -25,6 +28,9 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/grandparents', grandparentRoutes);
+app.use('/api/assignments', assignmentsRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api', generalRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

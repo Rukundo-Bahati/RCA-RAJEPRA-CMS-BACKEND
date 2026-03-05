@@ -12,6 +12,12 @@ export interface Family {
     id: string;
     name: string;
     generation: string;
+    total_members?: number;
+    total_boys?: number;
+    total_girls?: number;
+    total_y1?: number;
+    total_y2?: number;
+    total_y3?: number;
     pere?: FamilyMember;
     mere?: FamilyMember;
     members: FamilyMember[];

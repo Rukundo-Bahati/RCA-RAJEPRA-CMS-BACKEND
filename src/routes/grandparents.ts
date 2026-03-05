@@ -4,10 +4,24 @@ import {
     getFamilyById,
     createFamily,
     updateFamily,
-    deleteFamily
+    deleteFamily,
+    getDashboardStats,
+    getMembers,
+    createMember,
+    updateMember,
+    deleteMember
 } from '../controllers/grandparents';
 
 const router = Router();
+
+// Members
+router.get('/members', getMembers);
+router.post('/members', createMember);
+router.put('/members/:id', updateMember);
+router.delete('/members/:id', deleteMember);
+
+// Dashboard Stats
+router.get('/stats', getDashboardStats);
 
 // GET /api/grandparents
 router.get('/', getFamilies);

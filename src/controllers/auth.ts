@@ -46,7 +46,8 @@ export const login = async (req: Request, res: Response) => {
             user: {
                 id: user.id,
                 email: user.email,
-                name: user.name
+                name: user.name,
+                portal: user.role || 'grand_pere_mere'
             }
         });
     } catch (error) {
@@ -59,7 +60,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     try {
         const result = await query('SELECT * FROM users WHERE email = $1', [email]);
         if (result.rows.length === 0) {
-            return res.status(200).json({ message: 'If an account exists, a reset code has been sent' });
+            return res.status(404).json({ message: 'Account not found' });
         }
 
         // Generate 6-digit OTP for password reset
